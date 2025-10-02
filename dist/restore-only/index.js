@@ -115,14 +115,14 @@ exports.isFeatureAvailable = isFeatureAvailable;
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false) {
+function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, version = "") {
     return __awaiter(this, void 0, void 0, function* () {
         const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
         core.debug(`Cache service version: ${cacheServiceVersion}`);
         checkPaths(paths);
         switch (cacheServiceVersion) {
             case 'v2':
-                return yield restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive);
+                return yield restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, version);
             case 'v1':
             default:
                 return yield restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive);
@@ -221,7 +221,7 @@ function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsAr
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false) {
+function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, version = "") {
     return __awaiter(this, void 0, void 0, function* () {
         // Override UploadOptions to force the use of Azure
         options = Object.assign(Object.assign({}, options), { useAzureSdk: true });
@@ -242,7 +242,7 @@ function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsAr
             const request = {
                 key: primaryKey,
                 restoreKeys,
-                version: utils.getCacheVersion(paths, compressionMethod, enableCrossOsArchive)
+                version: version
             };
             const response = yield twirpClient.GetCacheEntryDownloadURL(request);
             if (!response.ok) {
@@ -66057,6 +66057,7 @@ var Inputs;
 (function (Inputs) {
     Inputs["Key"] = "key";
     Inputs["Path"] = "path";
+    Inputs["Version"] = "version";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
@@ -66143,6 +66144,7 @@ function restoreImpl(stateProvider, earlyExit) {
             }
             const primaryKey = core.getInput(constants_1.Inputs.Key, { required: true });
             stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
+            const version = core.getInput(constants_1.Inputs.Version, { required: true });
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
                 required: true
@@ -66150,7 +66152,7 @@ function restoreImpl(stateProvider, earlyExit) {
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
-            const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+            const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive, version);
             if (!cacheKey) {
                 // `cache-hit` is intentionally not set to `false` here to preserve existing behavior
                 // See https://github.com/actions/cache/issues/1466
