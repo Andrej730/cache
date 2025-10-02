@@ -293,7 +293,7 @@ function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsAr
         }
         finally {
             try {
-                if (archivePath) {
+                if (archivePath && false) {
                     yield utils.unlinkFile(archivePath);
                 }
             }
